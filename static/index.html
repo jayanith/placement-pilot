@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PlacementPilot · Is this job really for freshers?</title>
+<style>
+:root{--bg:#0f1220;--card:#181c2f;--ink:#e9ecf6;--mute:#9aa3c0;--ok:#2ecc71;--no:#ff5c5c;--warn:#f5b041;--acc:#6c8cff}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:980px;margin:0 auto;padding:28px 18px}
+h1{margin:0 0 4px;font-size:28px}p.sub{margin:0 0 22px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:14px;padding:16px}
+label{display:block;font-weight:600;margin:0 0 6px}
+textarea,input{width:100%;background:#0c0f1b;color:var(--ink);border:1px solid #2a3050;border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:230px;resize:vertical}.row{display:flex;gap:10px;align-items:center;margin-top:10px}
+button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5}.pill{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:700}
+.yes{background:#123d27;color:var(--ok)}.no{background:#431a1a;color:var(--no)}.unclear{background:#43341a;color:var(--warn)}
+ul{margin:6px 0 0 18px;padding:0}.mute{color:var(--mute)}.score{font-size:40px;font-weight:800}
+.chips span{display:inline-block;margin:3px;padding:3px 9px;border-radius:999px;background:#232a48;font-size:13px}
+.chips.miss span{background:#3b2330}pre{white-space:pre-wrap;background:#0c0f1b;padding:10px;border-radius:10px}
+#out{margin-top:18px;display:none}.err{color:var(--no)}
+</style>
+</head>
+<body>
+<main>
+  <h1>✈️ PlacementPilot</h1>
+  <p class="sub">Paste a job post. Find out in seconds if a fresher can really apply, spot scam signs, and get your résumé tailored to it. Powered by BharatCode Qwen 3.8.</p>
+  <form id="f" class="grid">
+    <div class="card">
+      <label for="jd">Job description</label>
+      <textarea id="jd" name="jd" required placeholder="Paste the full job post here…"></textarea>
+      <div class="row"><label for="batch" style="margin:0;white-space:nowrap">Your batch</label>
+        <input id="batch" name="batch" type="number" min="2020" max="2035" placeholder="2027" style="max-width:120px"></div>
+    </div>
+    <div class="card">
+      <label for="resume_text">Your résumé (optional)</label>
+      <textarea id="resume_text" name="resume_text" placeholder="Paste résumé text, or upload a PDF below…"></textarea>
+      <div class="row"><input type="file" id="resume_pdf" name="resume_pdf" accept="application/pdf"></div>
+    </div>
+    <div class="row"><button id="go" type="submit">Check this job</button><span id="status" class="mute"></span></div>
+  </form>
+  <section id="out"></section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chips = (a, cls="") => `<div class="chips ${cls}">${(a||[]).map(x=>`<span>${esc(x)}</span>`).join("") || '<span class="mute">none</span>'}</div>`;
+$("#f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const fd = new FormData(ev.target);
+  if (!fd.get("batch")) fd.delete("batch");
+  if (!$("#resume_pdf").files.length) fd.delete("resume_pdf");
+  $("#go").disabled = true; $("#status").textContent = "Reading the job post…";
+  try {
+    const r = await fetch("/api/analyse", {method:"POST", body: fd});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || "Request failed");
+    render(d);
+  } catch (e) {
+    $("#out").style.display="block"; $("#out").innerHTML = `<div class="card err">${esc(e.message)}</div>`;
+  } finally { $("#go").disabled = false; $("#status").textContent = ""; }
+});
+function render(d){
+  const e = d.eligibility, t = d.tailoring;
+  const label = {yes:"Fresher-eligible", no:"Not for freshers", unclear:"Unclear"}[e.eligible] || "Unclear";
+  let h = `<div class="card"><h2 style="margin:0">${esc(e.role)} <span class="mute">at ${esc(e.company)}</span></h2>
+    <p><span class="pill ${esc(e.eligible)}">${label}</span> ${esc(e.reason)}</p>
+    <p class="mute">${[e.employment_type, e.pay, e.location, e.work_mode, e.deadline && ("Deadline: "+e.deadline)].filter(Boolean).map(esc).join(" · ")}</p>
+    <b>Must-have skills</b>${chips(e.must_have_skills)}
+    ${e.red_flags?.length ? `<p><b style="color:var(--no)">⚠ Red flags</b></p><ul>${e.red_flags.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+  </div>`;
+  if (t) h += `<div class="grid" style="margin-top:16px">
+    <div class="card"><div class="score">${t.match_score}<span class="mute" style="font-size:18px">/100</span></div>
+      <b>You already show</b>${chips(t.matched_skills)}<b>Gaps</b>${chips(t.missing_skills,"miss")}
+      <b>Learn next</b><ul>${(t.learn_next||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+    <div class="card"><b>Tailored summary</b><pre>${esc(t.tailored_summary)}</pre>
+      <b>Rewritten bullets</b><ul>${(t.tailored_bullets||[]).map(b=>`<li>${esc(b.rewritten)}</li>`).join("")}</ul>
+      <b>Cover note</b><pre>${esc(t.cover_note)}</pre></div></div>`;
+  (d.warnings||[]).forEach(w => h += `<p class="mute">${esc(w)}</p>`);
+  $("#out").innerHTML = h; $("#out").style.display = "block";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+Project: PlacementPilot
+Author: Jayanith Chowdhary (GitHub: jayanith)
+Built for: BharatCode Build League, Round 1 (2026)
+Direction: Work & automation / Everyday assistance
+Model: BharatCode Qwen 3.8 27B (qwen-3.8-27b) via https://bharatcode.ai/api/model/v1/chat/completions
+
+What it does:
+PlacementPilot reads a job post and tells an Indian fresher, in seconds, whether they can
+genuinely apply (experience and batch requirements, not just the portal's "Freshers" tag),
+flags scam signs such as registration fees, and tailors their résumé to the role without
+inventing anything. Web app (FastAPI) and CLI.
+
+How BharatCode is used:
+All reasoning (requirement extraction, eligibility verdict, résumé tailoring, cover note)
+runs on qwen-3.8-27b through the OpenAI-compatible Chat Completions endpoint, with 503
+retry and finish_reason:length handling as the BharatCode docs recommend.

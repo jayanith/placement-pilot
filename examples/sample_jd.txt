@@ -1,0 +1,16 @@
+Software Engineer - Graduate Hire (2027 Batch)
+Company: Example Systems Pvt Ltd, Hyderabad (Hybrid)
+
+We are hiring final-year B.Tech/B.E. students graduating in 2027 (CSE/IT/ECE) for our
+graduate engineering program. No prior work experience required; internships are a plus.
+
+Must have:
+- Strong fundamentals in data structures, algorithms and OOP
+- Proficiency in Java or Python
+- Basic SQL and REST APIs
+- Git
+
+Nice to have: Docker, any cloud (AWS/Azure/GCP), React
+
+CTC: 8 LPA. Internship stipend during final semester: Rs 35,000/month.
+Apply on our careers portal by 30 November 2026. We never charge candidates any fee.
